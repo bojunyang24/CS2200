@@ -1,0 +1,25 @@
+CS 2200 Spring 2019
+Homework 2
+
+Name: Bojun Yang
+GT Username: byang301
+
+Question 1
+----------
+jalr $ra, $at
+The JALR instruction stores the incremented PC into the register $ra and loads the PC with the value in the register $at.
+
+lea $ra, nextinstruction
+beq $zero, $zero, labelx
+nextinstruction:
+labelx: beq $zero, $zero, labely
+labely:beq $zero, $zero, labelz
+.
+.
+.
+lablez: desired address in $at
+
+
+The lea instruction emulates storing the incremented pc into a $ra by using a "nextinstruction" label that corresponds to the incremented PC.
+The beq instruction is an unconditional branch to the a memory address specified by labelx. If the memory address is further away than the maximum offset allowed, we can chain more unconditional branches until we reach the desired address.
+Since there is no instruction that allows us to load a value from a register into the PC, we must assume the value in $at corresponds to a label.

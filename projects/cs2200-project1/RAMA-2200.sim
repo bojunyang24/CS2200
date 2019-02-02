@@ -1,11 +1,30 @@
 {
-  "version": "1.8.1",
+  "version": "1.8.2",
   "globalBitSize": 32,
   "clockSpeed": 1,
   "circuits": [
     {
       "name": "Datapath",
       "components": [],
+      "wires": []
+    },
+    {
+      "name": "ALU",
+      "components": [
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.plexers.MultiplexerPeer",
+          "x": 39,
+          "y": 41,
+          "properties": {
+            "Selector location": "Left/Top",
+            "Label location": "NORTH",
+            "Selector bits": "1",
+            "Label": "",
+            "Direction": "SOUTH",
+            "Bitsize": "32"
+          }
+        }
+      ],
       "wires": []
     }
   ]

@@ -1,8 +1,36 @@
 ! This program executes pow as a test program using the LC 2200 calling convention
 ! Check your registers ($v0) and memory to see if it is consistent with this program
 
+        ! vector table
+vector0:
+        .fill 0x00000000                        ! device ID 0
+        .fill 0x00000000                        ! device ID 1
+        .fill 0x00000000                        ! ...
+        .fill 0x00000000
+        .fill 0x00000000
+        .fill 0x00000000
+        .fill 0x00000000
+        .fill 0x00000000
+        .fill 0x00000000
+        .fill 0x00000000
+        .fill 0x00000000
+        .fill 0x00000000
+        .fill 0x00000000
+        .fill 0x00000000
+        .fill 0x00000000
+        .fill 0x00000000                        ! device ID 15
+        ! end vector table
+
 main:	lea $sp, initsp                         ! initialize the stack pointer
         lw $sp, 0($sp)                          ! finish initialization
+
+                                                ! Install timer interrupt handler into vector table
+        noop                                    ! FIX ME
+
+                                                ! Install keyboard interrupt handler into vector table
+        noop                                    ! FIX ME
+
+        noop                                    ! Enable interrupts
 
         lea $a0, BASE                           ! load base for pow
         lw $a0, 0($a0)
@@ -16,8 +44,8 @@ main:	lea $sp, initsp                         ! initialize the stack pointer
         halt                                    ! stop the program here
         addi $v0, $zero, -1                     ! load a bad value on failure to halt
 
-BASE:   .fill 5
-EXP:    .fill 4
+BASE:   .fill 2
+EXP:    .fill 8
 ANS:	.fill 0                                 ! should come out to 256 (BASE^EXP)
 
 POW:    addi $sp, $sp, -1                       ! allocate space for old frame pointer
@@ -61,4 +89,13 @@ AGAIN:  add $v0, $v0, $a0                       ! return value += argument0
 
         jalr $zero, $ra                         ! return from mult
 
+timer_handler:
+        noop                                    ! FIX ME
+
+keyboard_handler:
+        noop                                    ! FIX ME
+
 initsp: .fill 0xA000
+
+ticks:  .fill 0xFFFD
+keyval: .fill 0xFFFF

@@ -31,7 +31,7 @@ main:	lea $sp, initsp                         ! initialize the stack pointer
                                                 ! Install keyboard interrupt handler into vector table
         noop                                    ! FIX ME
 
-        ei                                    ! Enable interrupts
+        ei                                      ! Enable interrupts
                                                 ! FIX ME
 
         lea $a0, BASE                           ! load base for pow
@@ -101,9 +101,9 @@ timer_handler:
         sw $a1, 0($sp)                          ! save $a1
 
         lea $a0, ticks                          ! load addr of ticks
-        lw $a1, a0, 0                           ! load value of ticks
-        add $a1, a1, 1                          ! increment value of ticks
-        sw $a1, $a0, 0                          ! store incremented value back into ticks
+        lw $a1, 0($a0)                          ! load value of ticks
+        addi $a1, $a1, 1                        ! increment value of ticks
+        sw $a1, 0($a0)                          ! store incremented value back into ticks
 
         lw $a0, 1($sp)                          ! restore $a0
         lw $a1, 0($sp)                          ! restore $a1

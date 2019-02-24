@@ -25,12 +25,14 @@ main:	lea $sp, initsp                         ! initialize the stack pointer
         lw $sp, 0($sp)                          ! finish initialization
 
                                                 ! Install timer interrupt handler into vector table
-        noop                                    ! FIX ME
+        lea $a0, timer_handler                  ! timer_handler addr
+        sw $a0, 1($zero)                        ! store into device id addr of 0x1
 
                                                 ! Install keyboard interrupt handler into vector table
         noop                                    ! FIX ME
 
-        noop                                    ! Enable interrupts
+        ei                                    ! Enable interrupts
+                                                ! FIX ME
 
         lea $a0, BASE                           ! load base for pow
         lw $a0, 0($a0)
@@ -90,7 +92,28 @@ AGAIN:  add $v0, $v0, $a0                       ! return value += argument0
         jalr $zero, $ra                         ! return from mult
 
 timer_handler:
-        noop                                    ! FIX ME
+        addi $sp, $sp, -1                       ! allocate space for $k0
+        sw $k0, 0($sp)                          ! save $k0
+        ei                                      ! enable interrupts
+        addi $sp, $sp, -2                       ! allocate space to save processor registers
+
+        sw $a0, 1($sp)                          ! save $a0
+        sw $a1, 0($sp)                          ! save $a1
+
+        lea $a0, ticks                          ! load addr of ticks
+        lw $a1, a0, 0                           ! load value of ticks
+        add $a1, a1, 1                          ! increment value of ticks
+        sw $a1, $a0, 0                          ! store incremented value back into ticks
+
+        lw $a0, 1($sp)                          ! restore $a0
+        lw $a1, 0($sp)                          ! restore $a1
+        addi $sp, $sp, 2                        ! pop stack pointer
+        di                                      ! disable int
+        lw $k0, 0($sp)                          ! restore $k0
+        addi $sp, $sp, 1                        ! pop stack pointer
+        reti                                    ! return
+
+
 
 keyboard_handler:
         noop                                    ! FIX ME

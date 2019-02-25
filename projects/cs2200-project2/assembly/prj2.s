@@ -101,8 +101,9 @@ timer_handler:
         sw $a0, 1($sp)                          ! save $a0
         sw $a1, 0($sp)                          ! save $a1
 
-        lea $a0, ticks                          ! load addr of ticks
-        lw $a1, 0($a0)                          ! load value of ticks
+        lea $a0, ticks                          ! load addr of ticks into $a0
+        lw $a0, 0($a0)                          ! load 0xFFFD into $a0
+        lw $a1, 0($a0)                          ! load value of 0xFFFD (ticks) into $a1
         addi $a1, $a1, 1                        ! increment value of ticks
         sw $a1, 0($a0)                          ! store incremented value back into ticks
 

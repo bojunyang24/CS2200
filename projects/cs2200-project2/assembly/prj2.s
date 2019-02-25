@@ -29,7 +29,8 @@ main:	lea $sp, initsp                         ! initialize the stack pointer
         sw $a0, 1($zero)                        ! store into device id addr of 0x1
 
                                                 ! Install keyboard interrupt handler into vector table
-        noop                                    ! FIX ME
+        lea $a1, keyboard_handler               ! keyboard_handler addr
+        sw $a1, 2($zero)                        ! store into device id addr of 0x2
 
         ei                                      ! Enable interrupts
                                                 ! FIX ME
@@ -116,7 +117,26 @@ timer_handler:
 
 
 keyboard_handler:
-        noop                                    ! FIX ME
+        addi $sp, $sp, -1                       ! allocate space for $k0
+        sw $k0, 0($sp)                          ! save $k0
+        ei                                      ! enable interrupts
+        addi $sp, $sp, -2                       ! allocate space to save processor registers
+
+        sw $a0, 1($sp)                          ! save $a0
+        sw $a1, 0($sp)                          ! save $a1
+
+        in $a0, 0x2                             ! obtain most recently pressed key
+        lea $a1, keyval                         ! addr of keyval
+        lw $a1, 0($a1)                          ! load 0xFFFF into $a1
+        sw $a0, 0($a1)                          ! write keypress to 0xFFFF
+
+        lw $a0, 1($sp)                          ! restore $a0
+        lw $a1, 0($sp)                          ! restore $a1
+        addi $sp, $sp, 2                        ! pop stack pointer
+        di                                      ! disable int
+        lw $k0, 0($sp)                          ! restore $k0
+        addi $sp, $sp, 1                        ! pop stack pointer
+        reti                                    ! return
 
 initsp: .fill 0xA000
 

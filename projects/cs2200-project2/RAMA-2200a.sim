@@ -2514,14 +2514,14 @@
           "isHorizontal": false
         },
         {
-          "x": 79,
-          "y": 55,
+          "x": 80,
+          "y": 24,
           "length": 2,
           "isHorizontal": false
         },
         {
-          "x": 80,
-          "y": 24,
+          "x": 79,
+          "y": 55,
           "length": 2,
           "isHorizontal": false
         },
@@ -8212,6 +8212,18 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
+          "x": 32,
+          "y": 79,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Value": "200",
+            "Direction": "NORTH",
+            "Bitsize": "32"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
           "x": 34,
           "y": 14,
           "properties": {
@@ -8237,18 +8249,6 @@
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
           "x": 16,
-          "y": 79,
-          "properties": {
-            "Label location": "NORTH",
-            "Label": "",
-            "Value": "2000",
-            "Direction": "NORTH",
-            "Bitsize": "32"
-          }
-        },
-        {
-          "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
-          "x": 32,
           "y": 79,
           "properties": {
             "Label location": "NORTH",

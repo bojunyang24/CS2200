@@ -10,7 +10,7 @@ pfn_t select_victim_frame(void);
 
 /*  --------------------------------- PROBLEM 7 --------------------------------------
     Checkout PDF section 7 for this problem
-    
+
     Make a free frame for the system to use.
 
     You will first call the page replacement algorithm to identify an
@@ -39,11 +39,18 @@ pfn_t free_frame(void) {
      * 4) Unmap the corresponding frame table entry
      *
      */
-    if (frame_table[victim_pfn].mapped) {
-
+    fte_t *victim_fte = (fte_t*) (frame_table + victim_pfn);
+    if (victim_fte -> mapped == 1) {
+        pcb_t *victim_pcb = victim_fte -> process;
+        pte_t *victim_pte = ((pte_t*) (mem + (victim_pcb -> saved_ptbr * PAGE_SIZE))) + victim_fte -> vpn;
+        if (victim_pte -> dirty == 1) {
+            swap_write(victim_pte, (uint8_t*) (mem + (victim_pfn * PAGE_SIZE)));
+            stats.writebacks += 1;
+        }
+        victim_pte -> valid = 0;
+        victim_pte -> dirty = 0;
     }
-
-
+    victim_fte -> mapped = 0; // since we are returning a free frame, we unmap it here. it will be mapped in the code that calls this function
     /* Return the pfn */
     return victim_pfn;
 }
@@ -91,8 +98,20 @@ pfn_t select_victim_frame() {
         }
     } else if (replacement == FIFO) {
         /* Implement a FIFO algorithm here */
-
-
+        timestamp_t curr_time = get_current_timestamp();
+        timestamp_t timestamp = 0;
+        pfn_t ret_pfn = 0;
+        for (pfn_t i = 0; i < NUM_FRAMES; i++) {
+            if (!frame_table[i].protected && (curr_time - frame_table[i].timestamp) > timestamp) {
+                timestamp = frame_table[i].timestamp;
+                ret_pfn = i;
+            }
+        }
+        if (ret_pfn == 0) {
+        panic("no available pages\n");
+        } else {
+            return ret_pfn;
+        }
     } else if (replacement == CLOCKSWEEP) {
         /* Optionally, implement the clocksweep algorithm here */
 

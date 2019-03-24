@@ -4,6 +4,9 @@
 #include "swapops.h"
 #include "stats.h"
 
+#include <string.h>
+#include <stdio.h>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
@@ -19,7 +22,7 @@ fte_t *frame_table;
     The frame table will be located at physical address 0 in our simulated
     memory. You will first assign the frame_table global variable to point to
     this location in memory. You should zero out this first frame table entry
-    (remember, size of a frame table entry is PAGESIZE), in case for
+    (remember, size of a frame table is PAGESIZE), in case for
     any reason physical memory is not clean.
 
     You should then mark the first entry in the frame table as protected. We do
@@ -45,8 +48,9 @@ void system_init(void) {
      * frames in memory. The frame table will be useful later if we need to
      * evict pages during page faults.
      */
-
-
+     frame_table = (fte_t*) mem;
+     // frame_table = 0;
+     memset(frame_table, 0, PAGE_SIZE); // clears out PAGE_SIZE fte_t's in upper memory
     /*
      * 2. Mark the first frame table entry as protected.
      *
@@ -54,7 +58,7 @@ void system_init(void) {
      * however, there are some frames we never want to evict.
      * We mark these special pages as "protected" to indicate this.
      */
-
+     frame_table -> protected = 1;
 }
 
 /*  --------------------------------- PROBLEM 3 --------------------------------------
@@ -78,8 +82,8 @@ void proc_init(pcb_t *proc) {
      * 1. Call the free frame allocator (free_frame) to return a free frame for
      * this process's page table. You should zero-out the memory.
      */
-
-
+     pfn_t pfn = free_frame();
+     memset(mem + (pfn * PAGE_SIZE), 0, PAGE_SIZE);
     /*
      * 2. Update the process's PCB with the frame number
      * of the newly allocated page table.
@@ -87,12 +91,16 @@ void proc_init(pcb_t *proc) {
      * Additionally, mark the frame's frame table entry as protected. You do not
      * want your page table to be accidentally evicted.
      */
-
+     proc -> saved_ptbr = pfn;
+     // TODO: should we set other pcb_t fields?
+     frame_table[pfn].protected = 1;
+     frame_table[pfn].mapped = 1; // do we need this?
+     // frame_table[pfn].timestamp = get_current_timestamp();
 }
 
 /*  --------------------------------- PROBLEM 4 --------------------------------------
     Checkout PDF section 5 for this problem
-    
+
     Swaps the currently running process on the CPU to another process.
 
     Every process has its own page table, as you allocated in proc_init. You will
@@ -104,12 +112,13 @@ void proc_init(pcb_t *proc) {
     -----------------------------------------------------------------------------------
  */
 void context_switch(pcb_t *proc) {
-
+    PTBR = proc -> saved_ptbr;
+    // current_process = proc;
 }
 
 /*  --------------------------------- PROBLEM 5 --------------------------------------
     Checkout PDF section 6 for this problem
-    
+
     Takes an input virtual address and returns the data from the corresponding
     physical memory address. The steps to do this are:
 
@@ -142,11 +151,14 @@ uint8_t mem_access(vaddr_t address, char rw, uint8_t data) {
 
     /* Split the address and find the page table entry.
        Remember to keep a pointer to the entry so you can modify it later. */
-
-
+    vpn_t vpn = vaddr_vpn(address);
+    uint16_t offset = vaddr_offset(address);
+    pte_t *pte = ((pte_t*) (mem + (PTBR * PAGE_SIZE))) + vpn;
+    // pte_t *pte = (PTBR * PAGE_SIZE) + offset;
     /* If an entry is invalid, just page fault to allocate a page for the page table. */
-
-
+    if (pte -> valid == 0) {
+        page_fault(address);
+    }
     /*
         The physical address will be constructed like this:
         -------------------------------------
@@ -161,24 +173,35 @@ uint8_t mem_access(vaddr_t address, char rw, uint8_t data) {
         Also, find the frame table entry corresponding to the VPN,
         and make sure set any relevant values.
     */
+    pfn_t pfn = pte -> pfn;
+    paddr_t pa = (paddr_t) ((pfn * PAGE_SIZE) + offset); // OG
+    // paddr_t pa = ((((paddr_t) pfn) * PAGE_SIZE) + offset);
+    fte_t *fte = &frame_table[pfn];
+    fte -> vpn = vpn;
+    fte -> process = current_process;
 
-
+    // fte -> mapped = 1; // do i need this?
     /* Either read or write the data to the physical address
        depending on 'rw' */
-
+   stats.accesses += 1;
     if (rw == 'r') {
-
+        stats.reads += 1;
+        // return 0;
+        return mem[pa];
     } else {
-
+        stats.writes += 1;
+        pte -> dirty = 1;
+        mem[pa] = data;
+        return mem[pa];
     }
 
     /* Return the data read/written */
-    return 0;
+    // return 0;
 }
 
 /*  --------------------------------- PROBLEM 8 --------------------------------------
     Checkout PDF section 8 for this problem
-    
+
     When a process exits, you need to free any pages previously occupied by the
     process. Otherwise, every time you closed and re-opened Microsoft Word, it
     would gradually eat more and more of your computer's usable memory.
@@ -192,14 +215,26 @@ uint8_t mem_access(vaddr_t address, char rw, uint8_t data) {
 */
 void proc_cleanup(pcb_t *proc) {
     /* Look up the process's page table */
-
+    pte_t *target_pte = (pte_t*) (mem + (proc -> saved_ptbr * PAGE_SIZE));
     /* Iterate the page table and clean up each valid page */
     for (size_t i = 0; i < NUM_PAGES; i++) {
-
+        pte_t *curr_pte = target_pte + i;
+        if (curr_pte -> valid == 1) {
+            // clear mapped bit
+            frame_table[curr_pte -> pfn].mapped = 0;
+            // swapfree if needed
+            if (swap_exists(curr_pte) != 0) {
+                swap_free(curr_pte);
+            }
+            curr_pte -> valid = 0;
+            curr_pte -> dirty = 0;
+        }
     }
 
     /* Free the page table itself in the frame table */
-
+    frame_table[proc -> saved_ptbr].protected = 0;
+    frame_table[proc -> saved_ptbr].mapped = 0;
+    // memset((mem + proc -> saved_ptbr * PAGE_SIZE), 0, PAGE_SIZE);
 }
 
 #pragma GCC diagnostic pop

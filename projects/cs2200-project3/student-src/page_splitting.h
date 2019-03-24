@@ -23,12 +23,16 @@
 
 /* Get the virtual page number from a virtual address. */
 static inline vpn_t vaddr_vpn(vaddr_t addr) {
-    return 0;                   /* FIXME */
+    return addr / PAGE_SIZE;
+    // return addr >> OFFSET_LEN;                   /* FIXME */
 }
 
 /* Get the offset into the page from a virtual address. */
 static inline uint16_t vaddr_offset(vaddr_t addr) {
-    return 0;                   /* FIXME */
+    // return addr;
+    // TODO: since we want the offset which is the first OFFSET_LEN bits, returning uint16_t will just truncate the un-needed MSBs?
+    return addr % PAGE_SIZE;
+    // return addr & 16383;                 /* FIXME */
 }
 
 #pragma GCC diagnostic pop

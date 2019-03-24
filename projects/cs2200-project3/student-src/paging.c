@@ -222,16 +222,17 @@ void proc_cleanup(pcb_t *proc) {
         if (curr_pte -> valid == 1) {
             // clear mapped bit
             frame_table[curr_pte -> pfn].mapped = 0;
-            // swapfree if needed
-            if (swap_exists(curr_pte) != 0) {
-                swap_free(curr_pte);
-            }
             curr_pte -> valid = 0;
             curr_pte -> dirty = 0;
+        }
+        // swapfree if needed
+        if (swap_exists(curr_pte) != 0) {
+            swap_free(curr_pte);
         }
     }
 
     /* Free the page table itself in the frame table */
+    // free(frame_table + proc -> saved_ptbr);
     frame_table[proc -> saved_ptbr].protected = 0;
     frame_table[proc -> saved_ptbr].mapped = 0;
     // memset((mem + proc -> saved_ptbr * PAGE_SIZE), 0, PAGE_SIZE);

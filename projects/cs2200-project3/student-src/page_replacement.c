@@ -103,7 +103,7 @@ pfn_t select_victim_frame() {
         pfn_t ret_pfn = 0;
         for (pfn_t i = 0; i < NUM_FRAMES; i++) {
             if (!frame_table[i].protected && (curr_time - frame_table[i].timestamp) > timestamp) {
-                timestamp = frame_table[i].timestamp;
+                timestamp = curr_time - frame_table[i].timestamp;
                 ret_pfn = i;
             }
         }

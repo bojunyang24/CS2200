@@ -71,6 +71,8 @@ pfn_t free_frame(void) {
     the number of entries in the frame table.
     ----------------------------------------------------------------------------------
 */
+static pfn_t ptr = 0;
+
 pfn_t select_victim_frame() {
     /* See if there are any free frames first */
     size_t num_entries = MEM_SIZE / PAGE_SIZE;
@@ -114,7 +116,15 @@ pfn_t select_victim_frame() {
         }
     } else if (replacement == CLOCKSWEEP) {
         /* Optionally, implement the clocksweep algorithm here */
-
+        for (pfn_t i = 0; i < 2 * NUM_FRAMES; i++) {
+            if (!frame_table[ptr].protected && frame_table[ptr].timestamp == 0) {
+                pfn_t ret = ptr;
+                ptr = (ptr + 1) % NUM_FRAMES;
+                return ret;
+            }
+            frame_table[ptr].timestamp = 0;
+            ptr = (ptr + 1) % NUM_FRAMES;
+        }
     }
 
     /* If every frame is protected, give up. This should never happen

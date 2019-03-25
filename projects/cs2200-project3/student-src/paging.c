@@ -179,6 +179,9 @@ uint8_t mem_access(vaddr_t address, char rw, uint8_t data) {
     fte_t *fte = &frame_table[pfn];
     fte -> vpn = vpn;
     fte -> process = current_process;
+    if (replacement == CLOCKSWEEP) {
+        fte -> timestamp = get_current_timestamp();
+    }
 
     // fte -> mapped = 1; // do i need this?
     /* Either read or write the data to the physical address

@@ -29,8 +29,11 @@ static int checksum(char *buffer, int length) {
      *  to implement this function.  For simplicity, simply sum the ascii
      *  values of all the characters in the buffer, and return the total.
      */
-
-    return 0;
+     int sum = 0;
+     for (int i = 0; i++; i < length) {
+         sum += (int) buffer[i];
+     }
+    return int;
 }
 
 /*
@@ -50,10 +53,10 @@ static packet_t *packetize(char *buffer, int length, int *count) {
      */
     packet_t *packets;
     *count = length / MAX_PAYLOAD_LENGTH;
-    if (length % MAX_PAYLOAD_LENGTH != 0)
-        *count += 1;
+    if (length % MAX_PAYLOAD_LENGTH != 0) { *count += 1; }
     packets = malloc(sizeof(packet_t) * (*count));
-    for (int i = 0; i++; i < (*count)) {
+    // memset(packets, 0, (size_t) (sizeof(packet_t) * (*count)));
+    for (int i = 0; i < (*count); i++) {
         // populate packets
         if (i == (*count) - 1) {
             packets[i]->type = LAST_DATA;
@@ -62,9 +65,8 @@ static packet_t *packetize(char *buffer, int length, int *count) {
         }
         packets[i]->checksum = checksum(buffer, length);
         packets[i]->payload_length = MAX_PAYLOAD_LENGTH;
-        if (length % MAX_PAYLOAD_LENGTH != 0)
-            packets[i]->payload_length = length % MAX_PAYLOAD_LENGTH;
-        for (int j = 0; j++; j < packets[i]->payload_length) {
+        if (length % MAX_PAYLOAD_LENGTH != 0) { packets[i]->payload_length = length % MAX_PAYLOAD_LENGTH; }
+        for (int j = 0; j < packets[i]->payload_length; j++) {
             packets[i]->payload[j] = buffer[(i * MAX_PAYLOAD_LENGTH) + j];
         }
     }
@@ -104,7 +106,24 @@ static void *rtp_recv_thread(void *void_ptr) {
             *    does not terminate
             * 4. if the payload matches, add the payload to the buffer
             */
-
+            if (packet.type == DATA || packet.type == LAST_DATA) {
+                packet_t* response = (packet_t*) malloc(sizeof(packet_t));
+                int checksum = checksum(&packet.payload, packet.payload_length);
+                if (checksum == packet.checksum) {
+                    // ACK
+                    response->type = ACK;
+                    int og_buffer_length = buffer_length;
+                    buffer_length += packet.payload_length;
+                    buffer = realloc(buffer, (size_t) buffer_length);
+                    memcpy(buffer + og_buffer_length, packet.payload, (size_t) packet.payload_length);
+                } else {
+                    // NACK
+                    if (packet.type == LAST_DATA) { packet.type = DATA; }
+                    response->type = NACK;
+                }
+                net_send_packet(connection, response);
+                free(response);
+            }
 
             /*
             *
@@ -118,7 +137,15 @@ static void *rtp_recv_thread(void *void_ptr) {
             *  2. signal the sending thread that an ACK or a NACK has been
             *     received.
             */
-
+            if (packet.type == ACK || packet.type == NACK) {
+                int ackType = 0;
+                if (packet.type == ACK) { ackType = 1; }
+                pthread_mutex_lock(&connection->ack_mutex);
+                connection->ack = ackType;
+                connection->sent = 1;
+                pthread_cond_signal(&connection->ack_cond);
+                pthread_mutex_unlock(&connection->ack_mutex);
+            }
 
         } while (packet.type != LAST_DATA);
 
@@ -131,8 +158,17 @@ static void *rtp_recv_thread(void *void_ptr) {
             * 1. Add message to the received queue.
             * 2. Signal the client thread that a message has been received.
             */
-
-
+            message = (message_t*) malloc(sizeof(message_t));
+            char* message_buffer = (char*) malloc(sizeof(char) * (buffer_length));
+            memset(message_buffer, 0, sizeof(char) * buffer_length);
+            memcpy(message_buffer, buffer, sizeof(char) * buffer_length);
+            message->buffer = message_buffer;
+            message->length = buffer_length;
+            pthread_mutex_lock(&connection->recv_mutex);
+            queue_add(&connection->recv_queue, message);
+            pthread_cond_signal(&connection->recv_cond);
+            pthread_mutex_unlock(&connection->recv_mutex);
+            free(buffer);
         } else free(buffer);
 
     } while (connection->alive == 1);
@@ -184,7 +220,16 @@ static void *rtp_send_thread(void *void_ptr) {
              *  3. If it was an ACK, continue sending the packets.
              *  4. If it was a NACK, resend the last packet
              */
-
+             pthread_mutex_lock(&connection->ack_mutex);
+             while (&connection->sent == 0) {
+                 pthread_cond_wait(&connection->ack_cond, &connection->ack_mutex);
+             }
+             connection->sent = 0;
+             if (&connection->ack == 0) {
+                 // NACK received
+                 i += -1;
+             }
+             pthread_mutex_unlock(&connection->ack_mutex);
 
         }
 

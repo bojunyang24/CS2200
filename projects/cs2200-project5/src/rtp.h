@@ -18,6 +18,8 @@ typedef struct rtp_connection {
     pthread_t send_thread;
 
     /* FIX ME - insert any needed members */
+    int ack;
+    int sent;
 
     pthread_cond_t ack_cond;
     pthread_mutex_t ack_mutex;

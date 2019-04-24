@@ -1,0 +1,7 @@
+Bojun Yang
+A.
+The protocol implemented in this project is a stop and wait protocol. It sends one packet and blocks until an ACK or NACK is received for that sent packet. This implementation doesn't actually handle lost packets as the server only seems to send corrupted packets. We do not keep track of timeout time therefore this implementation has no way of knowing if a packet is lost.
+B.
+You can not always send a message in a single packet if the size is too big. A bigger packet has higher latency and will cause more traffic in the network. Smaller packets have take up less space in a buffer and thus may have a lower chance of being lost due to not enough space in buffer queues (in congested networks). Sending smaller packets also decreases the amount of data you lose when a packet is either lost or corrupted beyond repair.
+C.
+This protocol can be improved if we didn't have to wait for an ACK or NACK before sending the next packet. There is lots of downtime when we are waiting for an ACK. We could implement a reliable pipelined (sliding window) protocol where we send a set of packets and wait then wait for ACK. Once the ACK for the first packet of the set is received, we can slide the window to send the next packet after the last packet of the first set of packets.
